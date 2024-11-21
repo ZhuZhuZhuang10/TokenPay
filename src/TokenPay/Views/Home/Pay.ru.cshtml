@@ -1,5 +1,5 @@
-﻿@{
-    ViewData["Title"] = "支付页";
+@{
+    ViewData["Title"] = "Страница оплаты";
     var Now = DateTime.Now.ToUniversalTime();
     var ExpireTime = ViewData.ContainsKey("ExpireTime") ? Convert.ToDateTime(ViewData["ExpireTime"]).ToUniversalTime() : Now;
 }
@@ -8,127 +8,354 @@
 @using TokenPay.Models.EthModel;
 @model TokenPay.Domains.TokenOrders
 @inject List<EVMChain> chain
-@if (Model == null)
-{
-    <div class="row align-items-center h-100">
-        <div class="text-center">
-            <h1 class="display-4">Приказы не существуют！</h1>
-        </div>
-    </div>
 
-}
-else
-{
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>@ViewData["Title"] - TokenPay</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- FontAwesome for Icons -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <!-- Custom CSS -->
     <style>
-        .time {
-            font-family: Consolas,Menlo,Courier;
+        body {
+            background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: #343a40;
         }
-
-        .address {
-        @if (@Model.ToAddress.StartsWith("T"))
+        .payment-container {
+            max-width: 800px;
+            margin: 50px auto;
+            background: #ffffff;
+            border-radius: 15px;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+            padding: 30px;
+        }
+        .header-section {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .header-section h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            color: #007bff;
+        }
+        .header-section p {
+            font-size: 1.1rem;
+            color: #6c757d;
+        }
+        .payment-details {
+            margin-bottom: 30px;
+        }
+        .payment-details h3 {
+            font-size: 1.75rem;
+            margin-bottom: 20px;
+            color: #17a2b8;
+        }
+        .address-section {
+            margin-bottom: 30px;
+        }
+        .address-section h4 {
+            font-size: 1.25rem;
+            margin-bottom: 15px;
+            color: #28a745;
+        }
+        .copy-btn {
+            margin-left: 10px;
+        }
+        .qr-code-section {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .qr-code-section img {
+            max-width: 200px;
+            border: 2px solid #dee2e6;
+            border-radius: 10px;
+            padding: 10px;
+            background-color: #f8f9fa;
+        }
+        .info-alert {
+            background-color: #fff3cd;
+            border-color: #ffeeba;
+            color: #856404;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 30px;
+        }
+        .countdown-timer {
+            font-size: 1.25rem;
+            font-weight: bold;
+            color: #dc3545;
+            margin-bottom: 20px;
+        }
+        .exchange-links {
+            margin-top: 20px;
+        }
+        .exchange-links h5 {
+            margin-bottom: 15px;
+            color: #6f42c1;
+        }
+        .exchange-links ul {
+            list-style: none;
+            padding: 0;
+        }
+        .exchange-links li {
+            margin-bottom: 10px;
+        }
+        .exchange-links a {
+            color: #007bff;
+            text-decoration: none;
+        }
+        .exchange-links a:hover {
+            text-decoration: underline;
+        }
+        .footer-section {
+            text-align: center;
+            margin-top: 30px;
+            color: #6c757d;
+        }
+        .btn-custom {
+            background-color: #17a2b8;
+            color: #ffffff;
+            border: none;
+        }
+        .btn-custom:hover {
+            background-color: #138496;
+            color: #ffffff;
+        }
+        .alert-icon {
+            margin-right: 10px;
+        }
+        .spinner-border {
+            width: 1.5rem;
+            height: 1.5rem;
+            border-width: 0.2em;
+        }
+        @media (max-width: 576px) {
+            .payment-container {
+                padding: 20px;
+            }
+            .header-section h1 {
+                font-size: 2rem;
+            }
+            .payment-details h3, .address-section h4, .exchange-links h5 {
+                font-size: 1.5rem;
+            }
+            .countdown-timer {
+                font-size: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="payment-container">
+        @if (Model == null)
         {
-            @Html.Raw("font-size:14px;")
+            <div class="row align-items-center h-100">
+                <div class="text-center w-100">
+                    <h1 class="display-4 text-danger">Заказ не существует!</h1>
+                    <p class="lead">Пожалуйста, проверьте детали заказа или обратитесь в поддержку.</p>
+                </div>
+            </div>
         }
         else
         {
-            @Html.Raw("font-size:12px;")
-        }
-        }
-    </style>
-    <div class="text-center pt-2">
-        <h4 class="display-6">Валюта, в которой вы платите <span class="text-danger">@Model.Currency.ToCurrency(chain,true)</span> для <span class="text-danger">@Model.Currency.ToBlockchainEnglishName(chain)</span> </h4>
+            <div class="header-section">
+                <h1>Оплата заказа</h1>
+                <p>Пожалуйста, выполните оплату, используя следующие детали.</p>
+            </div>
 
-        <div class="d-flex mb-2">
-            <div class="input-group m-auto" style="width:410px;">
-                <input class="form-control form-control-sm" type="text" id="Token" value="@Model.ToAddress" readonly>
-                <button class="btn btn-primary btn-sm" data-clipboard-target="#Token">копировать</button>
+            <div class="payment-details">
+                <h3>Детали платежа</h3>
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="currency" class="form-label"><i class="fas fa-money-bill-wave"></i> Валюта</label>
+                        <input type="text" class="form-control" id="currency" value="@Model.Currency.ToCurrency(chain)" readonly>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label for="blockchain" class="form-label"><i class="fas fa-link"></i> Блокчейн</label>
+                        <input type="text" class="form-control" id="blockchain" value="@Model.Currency.ToBlockchainEnglishName(chain)" readonly>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-12 mb-3">
+                        <label for="amount" class="form-label"><i class="fas fa-wallet"></i> Сумма к оплате</label>
+                        <div class="input-group">
+                            <input type="text" class="form-control" id="amount" value="@Model.Amount @Model.Currency.ToCurrency(chain)" readonly>
+                            <button class="btn btn-custom copy-btn" data-clipboard-text="@Model.Amount"><i class="fas fa-copy"></i> Копировать</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-12 mb-3">
+                        <label for="orderNumber" class="form-label"><i class="fas fa-receipt"></i> Номер заказа</label>
+                        <input type="text" class="form-control" id="orderNumber" value="@Model.OutOrderId" readonly>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-12 mb-3">
+                        <label for="expireTime" class="form-label"><i class="fas fa-hourglass-end"></i> Истечение срока</label>
+                        <input type="text" class="form-control" id="expireTime" value="@ExpireTime.ToString("yyyy-MM-dd HH:mm:ss 'GMT'zzz")" readonly>
+                    </div>
+                </div>
             </div>
-        </div>
-        <div class="mb-2 fw-bold display-6 invisible time">
-            осталось времени：<span class="text-danger"><span id="day_show"></span><span id="hour_show"></span><span id="minute_show"></span><span id="second_show"></span></span>
-        </div>
-        <div class="text-danger fw-bold mb-2">Пожалуйста, внимательно проверьте блокчейн и валюту, чтобы избежать потери активов или сбоя платежа ! ! !</div>
-        <div class="mb-2">
-            <div class="text-danger fw-bold" style="position:relative;bottom:-6px;height:0;">блокчейн：@Model.Currency.ToBlockchainEnglishName(chain) валюта：@Model.Currency.ToCurrency(chain)</div>
-            <img src="data:image/png;base64,@ViewData["QrCode"]" class="border border-gray-300" alt="address">
-            <div class="text-danger fw-semibold address" style="position:relative;top:-24px;height:0;">@Model.ToAddress</div>
-        </div>
-        <div class="text-start m-auto" style="width:300px;">
-            <div class="mb-2 fw-bold">
-                Сумма к оплате：<span class="text-danger">@Model.Amount @Model.Currency.ToCurrency(chain)</span><button class="btn btn-primary btn-sm ms-2" data-clipboard-text="@Model.Amount">копировать</button>
+
+            <div class="address-section">
+                <h4>Адрес для оплаты</h4>
+                <div class="input-group">
+                    <input type="text" class="form-control" id="paymentAddress" value="@Model.ToAddress" readonly style="@((Model.ToAddress.StartsWith("T")) ? "font-size:14px;" : "font-size:12px;")">
+                    <button class="btn btn-custom copy-btn" data-clipboard-target="#paymentAddress"><i class="fas fa-copy"></i> Копировать</button>
+                </div>
             </div>
-            <div class="mb-2">
-                Номер заказа：<span class="text-danger">@Model.OutOrderId</span>
+
+            <div class="qr-code-section">
+                <img src="data:image/png;base64,@ViewData["QrCode"]" alt="QR Код адреса для оплаты">
+                <p class="mt-2">Отсканируйте QR-код для быстрого доступа к адресу оплаты.</p>
             </div>
-            <div class="mb-2">
-                Истечение срока：<span class="text-danger">@ExpireTime.ToString("yyyy-MM-dd HH:mm:ss \"GMT\"zzz")</span>
+
+            <div class="info-alert d-flex align-items-center">
+                <i class="fas fa-exclamation-triangle alert-icon"></i>
+                <div>
+                    <strong>Важно:</strong> Пожалуйста, внимательно проверьте блокчейн и валюту, чтобы избежать потери активов или сбоя платежа!
+                </div>
             </div>
-            <div class="mt-4 text-start">
-                <div>Купить валюту блокчейна на этих сайтах</div>
-                <div>1. Купить <span class="text-danger">@Model.Currency.ToCurrency(chain)</span> на <a href="https://www.okx.com/buy-crypto#sourceBase=@Model.Currency.ToCurrency(chain)" target="_blank">OKX</a></div>
-                <div>2. Купить <span class="text-danger">@Model.Currency.ToCurrency(chain)</span> на <a href="https://p2p.binance.com/express/buy/@Model.Currency.ToCurrency(chain)" target="_blank">Binance</a></div>
+
+            <div class="countdown-timer">
+                Осталось времени: <span id="day_show"></span> <span id="hour_show"></span> <span id="minute_show"></span> <span id="second_show"></span>
             </div>
-        </div>
+
+            <div class="exchange-links">
+                <h5>Где можно купить валюту блокчейна:</h5>
+                <ul>
+                    <li>1. Купить <span class="text-danger">@Model.Currency.ToCurrency(chain)</span> на <a href="https://www.okx.com/buy-crypto#sourceBase=@Model.Currency.ToCurrency(chain)" target="_blank"><i class="fab fa-cc-visa"></i> OKX</a></li>
+                    <li>2. Купить <span class="text-danger">@Model.Currency.ToCurrency(chain)</span> на <a href="https://p2p.binance.com/express/buy/@Model.Currency.ToCurrency(chain)" target="_blank"><i class="fab fa-bitcoin"></i> Binance</a></li>
+                    <li>3. Купить <span class="text-danger">@Model.Currency.ToCurrency(chain)</span> на <a href="https://www.coinbase.com/buy/@Model.Currency.ToCurrency(chain)" target="_blank"><i class="fab fa-coinbase"></i> Coinbase</a></li>
+                    <li>4. Купить <span class="text-danger">@Model.Currency.ToCurrency(chain)</span> на <a href="https://www.kraken.com/buy/@Model.Currency.ToCurrency(chain)" target="_blank"><i class="fab fa-kraken"></i> Kraken</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-section">
+                <p>&copy; @DateTime.Now.Year TokenPay. Все права защищены.</p>
+                <p>Если у вас возникли вопросы, пожалуйста, <a href="/support" class="text-primary">свяжитесь с нами</a>.</p>
+            </div>
+        }
     </div>
 
+    <!-- Bootstrap JS and dependencies (Popper.js) -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- jQuery (для работы с Clipboard и AJAX) -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <!-- Clipboard.js для копирования -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.11/clipboard.min.js"></script>
+    <!-- Custom Scripts -->
     @section Scripts{
     <script>
-        let Time;
-        var EndTime = new Date('@ExpireTime.ToUniversalTime().ToString("yyyy/MM/dd HH:mm:ss")');
-        function timer() {
-            window.setInterval(function () {
-                var intDiff = (EndTime - new Date(new Date().toISOString().replace('T',' ').replace('Z',''))) / 1000
-                if (intDiff <= 0) return;
-                $(".time").removeClass("invisible")
-                var day = 0,
-                    hour = 0,
-                    minute = 0,
-                    second = 0;
-                if (intDiff > 0) {
-                    day = Math.floor(intDiff / (60 * 60 * 24));
-                    hour = Math.floor(intDiff / (60 * 60)) - (day * 24);
-                    minute = Math.floor(intDiff / 60) - (day * 24 * 60) - (hour * 60);
-                    second = Math.floor(intDiff) - (day * 24 * 60 * 60) - (hour * 60 * 60) - (minute * 60);
+        $(document).ready(function () {
+            // Инициализация Clipboard.js
+            var clipboard = new ClipboardJS('.copy-btn');
+
+            clipboard.on('success', function(e) {
+                // Показать всплывающее уведомление об успешном копировании
+                $(e.trigger).tooltip({
+                    title: "Скопировано!",
+                    placement: "top",
+                    trigger: "manual"
+                }).tooltip('show');
+                setTimeout(function () {
+                    $(e.trigger).tooltip('hide');
+                }, 1500);
+                e.clearSelection();
+            });
+
+            clipboard.on('error', function(e) {
+                // Показать всплывающее уведомление об ошибке копирования
+                $(e.trigger).tooltip({
+                    title: "Ошибка копирования",
+                    placement: "top",
+                    trigger: "manual"
+                }).tooltip('show');
+                setTimeout(function () {
+                    $(e.trigger).tooltip('hide');
+                }, 1500);
+            });
+
+            // Таймер обратного отсчета
+            function initializeTimer(endTime) {
+                function updateTimer() {
+                    var now = new Date();
+                    var timeDifference = endTime - now;
+
+                    if (timeDifference <= 0) {
+                        clearInterval(timerInterval);
+                        // Можно добавить логику по истечении времени, например, обновить страницу или показать сообщение
+                        location.reload();
+                        return;
+                    }
+
+                    var days = Math.floor(timeDifference / (1000 * 60 * 60 * 24));
+                    var hours = Math.floor((timeDifference / (1000 * 60 * 60)) % 24);
+                    var minutes = Math.floor((timeDifference / (1000 * 60)) % 60);
+                    var seconds = Math.floor((timeDifference / 1000) % 60);
+
+                    $('#day_show').text(days + " дн. ");
+                    $('#hour_show').text(hours + " ч. ");
+                    $('#minute_show').text(minutes + " мин. ");
+                    $('#second_show').text(seconds + " сек. ");
                 }
-                if (minute <= 9) minute = '0' + minute;
-                if (second <= 9) second = '0' + second;
-                if (day)
-                    $('#day_show').html(day + " дней ");
-                if (hour)
-                    $('#hour_show').html('<s id="h"></s>' + hour + ' часов ');
-                if (minute)
-                    $('#minute_show').html('<s></s>' + minute + ' минут ');
-                $('#second_show').html('<s></s>' + second + ' секунд ');
-                intDiff--;
-            }, 1000);
-        }
-        $(() => {
-            timer();
-            Time = setInterval(Check, 1000);
-        })
-        function Check() {
-            var RedirectUrl = "@(Model?.RedirectUrl)";
-                $.get("/Check/@(Model?.Id)")
-                    .then(x => {
-                        if (x === 'Pending') {
-                            console.log('待支付')
-                        } else if (x === 'Expired') {
-                            clearInterval(Time)
-                            console.log('订单过期')
-                            location.reload();
-                        } else if (x === 'Paid') {
-                            clearInterval(Time)
-                            console.log('已支付')
-                            setTimeout(() => {
-                                if (RedirectUrl) {
-                                    location = RedirectUrl
-                                } else {
-                                    alert("Paid")
-                                }
-                            }, 0)
-                        }
-                    })
+
+                // Обновлять таймер каждую секунду
+                var timerInterval = setInterval(updateTimer, 1000);
+                updateTimer(); // Первоначальный вызов
             }
-        </script>
+
+            // Инициализация таймера с заданным временем истечения
+            var endTime = new Date('@ExpireTime.ToUniversalTime().ToString("yyyy/MM/dd HH:mm:ss")');
+            initializeTimer(endTime);
+
+            // Функция проверки статуса заказа
+            function checkOrderStatus() {
+                var redirectUrl = "@(Model?.RedirectUrl)";
+                $.ajax({
+                    url: "/Check/@(Model?.Id)",
+                    method: "GET",
+                    success: function(response) {
+                        if (response === 'Pending') {
+                            console.log('Ожидание оплаты');
+                        } else if (response === 'Expired') {
+                            clearInterval(orderCheckInterval);
+                            console.log('Заказ истек');
+                            location.reload();
+                        } else if (response === 'Paid') {
+                            clearInterval(orderCheckInterval);
+                            console.log('Оплата получена');
+                            setTimeout(function () {
+                                if (redirectUrl) {
+                                    window.location.href = redirectUrl;
+                                } else {
+                                    alert("Оплата успешно получена!");
+                                }
+                            }, 500);
+                        }
+                    },
+                    error: function(xhr, status, error) {
+                        console.error('Ошибка при проверке статуса заказа:', error);
+                    }
+                });
+            }
+
+            // Установка интервала проверки статуса заказа каждые 5 секунд
+            var orderCheckInterval = setInterval(checkOrderStatus, 5000);
+
+            // Инициализация всплывающих подсказок (Bootstrap tooltips)
+            var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+            var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+              return new bootstrap.Tooltip(tooltipTriggerEl)
+            })
+        });
+    </script>
     }
-}
+</body>
+</html>
